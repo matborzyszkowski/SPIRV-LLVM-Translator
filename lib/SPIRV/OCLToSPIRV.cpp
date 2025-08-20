@@ -496,6 +496,9 @@ CallInst *OCLToSPIRVBase::visitCallAtomicCmpXchg(CallInst *CI) {
           {Mutator.getArg(0),
            TypedPointerType::get(
                MemTy, Mutator.getArg(0)->getType()->getPointerAddressSpace())});
+      Mutator.mapArg(1, [=](IRBuilder<> &Builder, Value *V) {
+        return Builder.CreateBitCast(V, MemTy);
+      });
       Mutator.mapArg(2, [=](IRBuilder<> &Builder, Value *V) {
         return Builder.CreateBitCast(V, MemTy);
       });
@@ -504,7 +507,8 @@ CallInst *OCLToSPIRVBase::visitCallAtomicCmpXchg(CallInst *CI) {
            "In SPIR-V 1.0 arguments of OpAtomicCompareExchange must be "
            "an integer type scalars");
     Mutator.mapArg(1, [=](IRBuilder<> &Builder, Value *V) {
-      return Builder.CreateLoad(MemTy, V, "exp");
+      Value *Arg1Bitcast = Builder.CreateBitCast(V, MemTy);
+      return Builder.CreateLoad(MemTy, Arg1Bitcast, "exp");
     });
     Mutator.changeReturnType(
         MemTy, [Expected, &NewCI](IRBuilder<> &Builder, CallInst *NCI) {
